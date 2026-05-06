@@ -6,15 +6,22 @@ import DeleteModal from './DeleteModal'
 import ProgressBar from './ProgressBar'
 import EntityTable from './EntityTable'
 import EntityFilters from './EntityFilters'
+import DualButton from './DualButton'
 import { fieldAllowSearch, fieldLabel, fieldRelation, listRecords, type ApiRecord, type EntityDef } from './data/provider'
 import { hasActiveFilter, getActiveFilterLabel, clearFilterKeys } from './filterUtils'
 
-interface Props {
-  entity: EntityDef
-  onRowClick?: (record: ApiRecord, openModal: (content?: ReactNode) => void) => void
+export interface HeaderActionsContext {
+  filteredRecords: ApiRecord[]
+  activeFilterLabels: string[]
 }
 
-export default function EntityPanel({ entity, onRowClick }: Props) {
+interface Props {
+  entity: EntityDef
+  onRowClick?: (record: ApiRecord, openModal: (content?: ReactNode) => void, setRecordIdQuery: (recordId: string) => void) => void
+  headerActions?: (ctx: HeaderActionsContext) => ReactNode
+}
+
+export default function EntityPanel({ entity, onRowClick, headerActions }: Props) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [records, setRecords] = useState<ApiRecord[]>([])
   const [relatedRecords, setRelatedRecords] = useState<Record<string, ApiRecord[]>>({})
@@ -23,18 +30,26 @@ export default function EntityPanel({ entity, onRowClick }: Props) {
   const [barComplete, setBarComplete] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ApiRecord | null>(null)
   const [modal, setModal] = useState<{ open: boolean; record?: ApiRecord }>({ open: false })
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(() => (entity.filters?.length ?? 0) > 0)
   const [searchQuery, setSearchQuery] = useState('')
+  const [localFilters, setLocalFilters] = useState<Record<string, unknown>>({})
+  const filterKey = useMemo(() => {
+    const parts: string[] = []
+    for (const [key, value] of searchParams.entries()) {
+      if (key === 'selected') continue
+      parts.push(`${key}=${value}`)
+    }
+    return parts.sort().join('&')
+  }, [searchParams])
 
   const filterParams = useMemo(() => {
     const params: Record<string, unknown> = {}
-    for (const [key, value] of searchParams.entries()) {
+    for (const [key, value] of new URLSearchParams(filterKey).entries()) {
       params[key] = value
     }
     return params
-  }, [searchParams])
+  }, [filterKey])
 
-  const [localFilters, setLocalFilters] = useState<Record<string, unknown>>({})
 
   const handleFilterChange = (params: Record<string, unknown>) => {
     setLocalFilters(params)
@@ -120,8 +135,16 @@ export default function EntityPanel({ entity, onRowClick }: Props) {
   const paddedTotal = String(records.length).padStart(totalDigits, '0')
   const paddedFiltered = String(filteredRecords.length).padStart(totalDigits, '0')
 
+  const PAGE_SIZE = 250
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const pageRecords = filteredRecords.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
+    setCurrentPage(1)
   }
 
   return (
@@ -157,51 +180,31 @@ export default function EntityPanel({ entity, onRowClick }: Props) {
         </div>
         <div className="flex items-center gap-3">
           {entity.filters && entity.filters.length > 0 && (
-            <button
-              onClick={() => {
-                if (showFilters) {
-                  applyFiltersAndClose()
-                } else {
-                  setShowFilters(true)
-                }
+            <DualButton
+              active={showFilters}
+              onActivate={() => setShowFilters(true)}
+              onConfirm={applyFiltersAndClose}
+              primary={{
+                label: 'Filtros',
+                icon: (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                ),
               }}
-              className={`flex items-center gap-1 px-3 py-2 text-sm rounded-lg transition-colors bg-gray-50 ${showFilters
-                ? 'bg-yellow-400 text-gray-900'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-            >
-              <div className="relative overflow-hidden w-16 h-5">
-                <span className={`absolute inset-0 uppercase transition-all duration-200 ${showFilters ? 'opacity-0 -translate-y-full' : 'opacity-100 translate-y-0'
-                  }`}>
-                  Filtros
-                </span>
-                <span className={`absolute inset-0 uppercase transition-all duration-200 ${showFilters ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
-                  }`}>
-                  Aplicar
-                </span>
-              </div>
-              <div className="relative w-4 h-4">
-                <svg
-                  className={`absolute inset-0 w-4 h-4 transition-all duration-200 ${showFilters ? 'opacity-0 rotate-12 scale-50' : 'opacity-100 rotate-0 scale-100'
-                    }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                <svg
-                  className={`absolute inset-0 w-4 h-4 transition-all duration-200 ${showFilters ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-12 scale-50'
-                    }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </button>
+              labelWidth="60"
+              activeLabelWidth="60"
+              secondary={{
+                label: 'Aplicar',
+                icon: (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ),
+              }}
+            />
           )}
+          {headerActions?.({ filteredRecords, activeFilterLabels: activeFilterLabels ?? [] })}
           {!entity.readonly && (
             <button
               onClick={() => setModal({ open: true })}
@@ -259,7 +262,7 @@ export default function EntityPanel({ entity, onRowClick }: Props) {
         ) : (
           <EntityTable
             entity={entity}
-            records={filteredRecords}
+            records={pageRecords}
             relatedRecords={relatedRecords}
             onEdit={(record) => setModal({ open: true, record })}
             onDelete={(record) => setDeleteTarget(record)}
@@ -269,6 +272,34 @@ export default function EntityPanel({ entity, onRowClick }: Props) {
           />
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && barComplete && totalPages > 1 && (
+        <div className="shrink-0 border-t border-gray-100 px-8 py-3 flex items-center justify-between bg-white">
+          <span className="text-xs font-mono text-gray-400 uppercase">
+            {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filteredRecords.length)} de {filteredRecords.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="px-3 py-1 text-xs font-mono text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              ←
+            </button>
+            <span className="px-3 py-1 text-xs font-mono text-gray-500">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="px-3 py-1 text-xs font-mono text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}
 
       {modal.open && (
         <RecordModal

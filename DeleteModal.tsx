@@ -38,7 +38,7 @@ export default function DeleteModal({ entity, record, onClose, onDeleted }: Prop
           <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
             <span className="text-red-500 text-2xl">⚠</span>
           </div>
-          <h2 className="font-syne font-bold text-xl text-gray-900 mb-1">
+          <h2 className="font-mono font-light text-xl text-gray-900 mb-1">
             ¿Eliminar registro?
           </h2>
           <p className="text-gray-500 text-sm leading-relaxed">

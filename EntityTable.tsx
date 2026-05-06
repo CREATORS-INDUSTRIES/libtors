@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { renderField } from './fieldRenderers'
 import { fieldAlign, fieldLabel, fieldRelation, fieldType, fieldWidth, type ApiRecord, type EntityDef, type FieldDef } from './data/provider'
@@ -11,7 +12,7 @@ interface Props {
   onDelete: (record: ApiRecord) => void
   searchQuery?: string
   searchableFields?: string[]
-  onRowClick?: (record: ApiRecord, openModal: (component?: ReactNode) => void) => void
+  onRowClick?: (record: ApiRecord, openModal: (component?: ReactNode) => void, setRecordIdQuery: (recordId: string) => void) => void
 }
 
 interface ModalState {
@@ -37,6 +38,8 @@ function getCellStyle(width: number | 'fit' | 'full' | undefined, hasFullColumns
 
 export default function EntityTable({ entity, records, relatedRecords, onEdit, onDelete, searchQuery, searchableFields = [], onRowClick }: Props) {
   const [modal, setModal] = useState<ModalState>({ open: false, content: null })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const restoredRef = useRef<string | null>(null)
 
   const openModal = (component?: ReactNode) => {
     if (component) {
@@ -46,7 +49,34 @@ export default function EntityTable({ entity, records, relatedRecords, onEdit, o
 
   const closeModal = () => {
     setModal({ open: false, content: null })
+    const p = new URLSearchParams(searchParams)
+    if (p.has('selected')) {
+      p.delete('selected')
+      setSearchParams(p, { replace: true })
+    }
+    restoredRef.current = null
   }
+
+  const setRecordIdQuery = (recordId: string) => {
+    const p = new URLSearchParams(searchParams)
+    p.set('selected', recordId)
+    setSearchParams(p, { replace: true })
+  }
+
+  const handleRowClick = (record: ApiRecord) => {
+    if (!onRowClick) return
+    onRowClick(record, openModal, setRecordIdQuery)
+  }
+
+  useEffect(() => {
+    const sel = searchParams.get('selected')
+    if (!sel || !onRowClick || records.length === 0) return
+    if (restoredRef.current === sel) return
+    const record = records.find(r => String(r.id) === sel)
+    if (!record) return
+    restoredRef.current = sel
+    onRowClick(record, openModal, setRecordIdQuery)
+  }, [searchParams, records, onRowClick])
 
   const fieldNames = Object.keys(entity.fields)
 
@@ -89,7 +119,7 @@ export default function EntityTable({ entity, records, relatedRecords, onEdit, o
           display: none;
         }
       `}</style>
-      <table className="w-full table-fixed">
+      <table className="table-fixed min-w-full w-max">
         <thead className="sticky top-0 z-10 bg-gray-50" style={{
           boxShadow: "inset 0 -1px #ececec"
         }}>
@@ -119,7 +149,7 @@ export default function EntityTable({ entity, records, relatedRecords, onEdit, o
             <tr
               key={record.id}
               className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
-              onClick={() => onRowClick?.(record, openModal)}
+              onClick={() => handleRowClick(record)}
             >
               <td className="px-4 py-4 text-sm text-gray-400 whitespace-nowrap" style={{ width: 60 }}>
                 {index + 1}
@@ -163,7 +193,7 @@ export default function EntityTable({ entity, records, relatedRecords, onEdit, o
       </table>
       {modal.open && modal.content && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in" onClick={closeModal}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto animate-zoom-in-95" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[85vh] overflow-auto animate-zoom-in-95" onClick={e => e.stopPropagation()}>
             {modal.content}
           </div>
         </div>

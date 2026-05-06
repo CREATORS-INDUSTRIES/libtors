@@ -40,15 +40,18 @@ export function hasActiveFilter(f: FilterDef, searchParams: URLSearchParams): bo
 
 export function getActiveFilterLabel(f: FilterDef, searchParams: URLSearchParams): string | null {
   const params = getFilterParams(f, searchParams)
-  if (!params.value) return null
   if (params.type === 'dateRange') {
     if (params.from && params.to) {
       return `Desde ${params.from} hasta ${params.to}`
     }
     return null
   }
+  if (!params.value) return null
   if (params.type === "date") {
     return getFilterLabel(f) + " " + params.value
+  }
+  if (params.type === "text") {
+    return getFilterLabel(f) + " [" + params.value + "*]"
   }
   if (params.type === 'boolean') {
     if (params.value === 'true') return `${getFilterLabel(f)}: ${f.data?.['true'] ?? 'Sí'}`

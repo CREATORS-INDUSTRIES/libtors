@@ -23,6 +23,27 @@ export const fieldRenderers: Record<string, FieldRenderer> = {
     typeof value === 'number' ? (
       <span className="font-mono text-right block w-full">{value.toLocaleString('es-ES', { minimumFractionDigits: 2 })} {settings?.currency ? String(settings.currency) : '$'}</span>
     ) : null,
+  date: (value, settings) => {
+    if (value == null) return null
+    let d: Date | null = null
+    if (typeof value === 'number') {
+      // unix seconds vs ms
+      d = new Date(value < 1e12 ? value * 1000 : value)
+    } else if (typeof value === 'string') {
+      const n = Number(value)
+      if (!Number.isNaN(n) && value.trim() !== '') {
+        d = new Date(n < 1e12 ? n * 1000 : n)
+      } else {
+        d = new Date(value)
+      }
+    }
+    if (!d || isNaN(d.getTime())) return null
+    const format = settings?.format
+    if (format === 'long') {
+      return <span className="font-mono">{d.toLocaleString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+    }
+    return <span className="font-mono">{d.toLocaleDateString('es-ES')}</span>
+  },
   color: (value) =>
     typeof value === 'string' ? (
       <div className="flex items-center gap-2">
