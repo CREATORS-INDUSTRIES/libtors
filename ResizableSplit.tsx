@@ -56,7 +56,7 @@ export default function ResizableSplit({
   return (
     <div ref={containerRef} className={`w-full h-full flex flex-row ${className}`}>
       <div
-        className="overflow-auto"
+        className="overflow-hidden"
         style={{ width: `${leftPct}%`, minWidth: leftMinWidth }}
       >
         {left}
