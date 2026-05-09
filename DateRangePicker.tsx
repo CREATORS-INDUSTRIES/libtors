@@ -83,39 +83,11 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
     return { startDoy, endDoy }
   }, [fromParsed, toParsed, year, total])
 
-  // Build snap targets: first/last day of each month, EXCEPT Jan 1 (left edge).
-  const snapTargets = useMemo(() => {
-    const targets: number[] = []
-    for (let m = 0; m < 12; m++) {
-      const start = monthStartDoy(year, m)
-      const end = start + monthDays(year, m) - 1
-      if (m !== 0) targets.push(start)
-      targets.push(end)
-    }
-    return Array.from(new Set(targets)).sort((a, b) => a - b)
-  }, [year])
-
   function xToDoy(clientX: number): number {
     const rect = trackRef.current?.getBoundingClientRect()
     if (!rect) return 1
     const ratio = (clientX - rect.left) / rect.width
-    const raw = Math.max(1, Math.min(total, Math.round(ratio * total) || 1))
-
-    // Light snap: only snap if cursor is essentially on the boundary
-    // (≤3px). Day 2 stays day 2.
-    const pxPerDay = rect.width / total
-    const snapPx = 3
-    const snapDays = Math.max(1, Math.round(snapPx / pxPerDay))
-    let best = raw
-    let bestDist = Infinity
-    for (const t of snapTargets) {
-      const dist = Math.abs(t - raw)
-      if (dist < bestDist && dist <= snapDays) {
-        best = t
-        bestDist = dist
-      }
-    }
-    return best
+    return Math.max(1, Math.min(total, Math.round(ratio * total) || 1))
   }
 
   function updateCursor(clientX: number) {
@@ -200,47 +172,86 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
         </span>
       </div>
 
-      {/* Track */}
-      <div
-        ref={trackRef}
-        onMouseDown={onMouseDown}
-        onMouseMove={(e) => updateCursor(e.clientX)}
-        onMouseLeave={() => setCursor(null)}
-        className="relative h-16 w-full bg-gray-50 border border-gray-200 rounded-lg cursor-crosshair overflow-hidden"
-      >
-        {/* Selection band */}
-        {preview && widthPct > 0 && (
-          <div
-            className="absolute top-0 bottom-0 bg-yellow-400 pointer-events-none"
-            style={{ left: `${startPct}%`, width: `${widthPct}%` }}
-          />
-        )}
+      {/* Track wrapper — relative so chip can escape overflow-hidden */}
+      <div className="relative">
+        <div
+          ref={trackRef}
+          onMouseDown={onMouseDown}
+          onMouseMove={(e) => updateCursor(e.clientX)}
+          onMouseLeave={() => setCursor(null)}
+          className="relative h-16 w-full bg-gray-50 border border-gray-200 rounded-lg cursor-crosshair overflow-hidden"
+        >
+          {/* Selection band */}
+          {preview && widthPct > 0 && (
+            <div
+              className="absolute top-0 bottom-0 bg-yellow-400 pointer-events-none"
+              style={{ left: `${startPct}%`, width: `${widthPct}%` }}
+            />
+          )}
 
-        {/* Today marker */}
-        {todayDoy != null && (
-          <div
-            className="absolute top-0 bottom-0 w-px bg-blue-500/70 pointer-events-none"
-            style={{ left: `${(todayDoy - 0.5) / total * 100}%` }}
-          />
-        )}
+          {/* Today marker */}
+          {todayDoy != null && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-blue-500/70 pointer-events-none"
+              style={{ left: `${(todayDoy - 0.5) / total * 100}%` }}
+            />
+          )}
 
-        {/* Cursor indicator */}
-        {cursor && (
-          <div
-            className="absolute top-0 bottom-0 w-px bg-gray-400 pointer-events-none"
-            style={{ left: `${cursor.xPct}%` }}
-          />
-        )}
+          {/* Cursor indicator */}
+          {cursor && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-gray-400 pointer-events-none"
+              style={{ left: `${cursor.xPct}%` }}
+            />
+          )}
 
-        {/* Cursor chip — sits inside track, clamped to bounds */}
+          {/* Month vertical bars at day 1 (skip January — left edge) */}
+          {MONTH_LABELS.map((_label, m) => {
+            if (m === 0) return null
+            const doy = monthStartDoy(year, m)
+            const leftPct = (doy - 1) / total * 100
+            const inRange = preview && doy >= preview.startDoy && doy <= preview.endDoy
+            return (
+              <div
+                key={`bar-${m}`}
+                className={`absolute top-0 bottom-0 w-px pointer-events-none ${inRange ? 'bg-yellow-600/40' : 'bg-gray-300'}`}
+                style={{ left: `${leftPct}%` }}
+              />
+            )
+          })}
+
+          {/* Month labels centered within month span */}
+          {MONTH_LABELS.map((label, m) => {
+            const start = monthStartDoy(year, m)
+            const md = monthDays(year, m)
+            const center = start + md / 2 - 1
+            const leftPct = center / total * 100
+            const inRange = preview && center >= preview.startDoy && center <= preview.endDoy
+            return (
+              <div
+                key={`lbl-${m}`}
+                className="absolute top-1.5 -translate-x-1/2 pointer-events-none"
+                style={{ left: `${leftPct}%` }}
+              >
+                <span className={`text-[9px] font-mono uppercase tracking-widest ${inRange ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Cursor chip — outside overflow-hidden, positioned relative to wrapper */}
         {cursor && (() => {
           const date = doyToDate(year, cursor.doy)
-          // Clamp horizontally so chip never overflows the track edges.
-          const clamped = Math.max(8, Math.min(92, cursor.xPct))
+          const clamped = Math.max(0, Math.min(100, cursor.xPct))
           return (
             <div
-              className="absolute bottom-1 -translate-x-1/2 pointer-events-none z-10"
-              style={{ left: `${clamped}%` }}
+              className="absolute bottom-1 pointer-events-none z-20 transition-transform duration-500 ease-out"
+              style={{
+                left: `${clamped}%`,
+                transform: `translateX(${clamped < 10 ? '0%' : clamped > 90 ? '-100%' : '-50%'})`,
+              }}
             >
               <div className="px-1.5 py-0.5 bg-gray-900 text-gray-100 text-[9px] font-mono uppercase tracking-widest rounded whitespace-nowrap tabular-nums">
                 {pad(date.d)} {MONTH_LABELS[date.m]}
@@ -248,42 +259,6 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
             </div>
           )
         })()}
-
-        {/* Month vertical bars at day 1 (skip January — left edge) */}
-        {MONTH_LABELS.map((_label, m) => {
-          if (m === 0) return null
-          const doy = monthStartDoy(year, m)
-          const leftPct = (doy - 1) / total * 100
-          const inRange = preview && doy >= preview.startDoy && doy <= preview.endDoy
-          return (
-            <div
-              key={`bar-${m}`}
-              className={`absolute top-0 bottom-0 w-px pointer-events-none ${inRange ? 'bg-yellow-600/40' : 'bg-gray-300'}`}
-              style={{ left: `${leftPct}%` }}
-            />
-          )
-        })}
-
-        {/* Month labels centered within month span */}
-        {MONTH_LABELS.map((label, m) => {
-          const start = monthStartDoy(year, m)
-          const md = monthDays(year, m)
-          const center = start + md / 2 - 1
-          const leftPct = center / total * 100
-          const inRange = preview && center >= preview.startDoy && center <= preview.endDoy
-          return (
-            <div
-              key={`lbl-${m}`}
-              className="absolute top-1.5 -translate-x-1/2 pointer-events-none"
-              style={{ left: `${leftPct}%` }}
-            >
-              <span className={`text-[9px] font-mono uppercase tracking-widest ${inRange ? 'text-gray-900' : 'text-gray-400'}`}>
-                {label}
-              </span>
-            </div>
-          )
-        })}
-
       </div>
 
       {/* Day axis ticks: Jan 1, Apr 1, Jul 1, Oct 1, Dec 31 */}
@@ -291,7 +266,7 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
         {[0, 3, 6, 9].map(m => {
           const left = (monthStartDoy(year, m) - 1) / total * 100
           return (
-            <span key={m} className="absolute top-0" style={{ left: `${left}%`, transform: 'translateX(-50%)' }}>
+            <span key={m} className="absolute top-0" style={{ left: `${left}%`, transform: m === 0 ? 'none' : 'translateX(-50%)' }}>
               1 {MONTH_LABELS[m]}
             </span>
           )
