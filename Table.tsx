@@ -18,6 +18,7 @@ interface TableProps<T> {
   onRowClick?: (row: T) => void
   className?: string
   minWidth?: number | string
+  footer?: React.ReactNode
 }
 
 type SortState = { key: string; dir: 'asc' | 'desc' } | null
@@ -30,6 +31,7 @@ export default function Table<T>({
   onRowClick,
   className = '',
   minWidth,
+  footer,
 }: TableProps<T>) {
   const [sort, setSort] = useState<SortState>(null)
 
@@ -90,11 +92,13 @@ export default function Table<T>({
                 key={col.key}
                 onClick={() => canSort && toggleSort(col.key)}
                 disabled={!canSort}
-                className={`group flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-gray-400 hover:text-gray-700 transition-colors ${alignClass(col.align)} ${canSort ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`group flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest transition-colors ${alignClass(col.align)} ${canSort ? 'cursor-pointer' : 'cursor-default'} ${active ? "text-black" : "text-gray-400"}`}
               >
                 <span className="truncate">{col.label}</span>
                 {canSort && (
-                  <span className={`text-gray-300 transition-opacity ${active ? 'opacity-100 text-gray-700' : 'opacity-0 group-hover:opacity-60'}`}>
+                  <span
+                    className={`text-sm font-extralight transition-all group-hover:text-black/60 text-black group-hover:opacity-100 ${active ? "opacity-100" : "opacity-0"} `}
+                  >
                     {active && sort?.dir === 'desc' ? '↓' : '↑'}
                   </span>
                 )}
@@ -124,6 +128,7 @@ export default function Table<T>({
             </div>
           ))
         )}
+        {footer && footer}
       </div>
     </div>
   )
