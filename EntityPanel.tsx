@@ -115,7 +115,7 @@ export default function EntityPanel({ entity, onRowClick, headerActions }: Props
 
   const hasActiveFilters = entity.filters?.some(f => hasActiveFilter(f, searchParams))
 
-  const activeFilterLabels = entity.filters?.map(f => getActiveFilterLabel(f, searchParams)).filter(Boolean)
+  const activeFilterLabels = entity.filters?.map(f => getActiveFilterLabel(f, searchParams)).filter((x): x is string => x !== null)
 
   const searchableFields = Object.entries(entity.fields)
     .filter(([, def]) => fieldAllowSearch(def))

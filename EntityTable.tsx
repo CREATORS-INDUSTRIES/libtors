@@ -26,7 +26,7 @@ function formatValue(value: unknown): string {
   return String(value)
 }
 
-function getCellStyle(width: number | 'fit' | 'full' | undefined, hasFullColumns: boolean): React.CSSProperties | undefined {
+function getCellStyle(width: number | 'fit' | 'full' | undefined, hasFullColumns: number): React.CSSProperties | undefined {
   if (width === undefined) return undefined
   if (width === 'fit') return { width: 'min-content' }
   if (width === 'full') {
@@ -135,7 +135,7 @@ export default function EntityTable({ entity, records, relatedRecords, onEdit, o
                 <th
                   key={f}
                   className={`text-${align} px-4 py-4 text-sm font-light uppercase whitespace-nowrap ${isMatching ? 'text-yellow-700 bg-yellow-100 shadow-[inset_0_-1px_0_0_rgba(0,0,0,0.3)]' : 'text-gray-500'}`}
-                  style={getCellStyle(width, hasFullColumns)}
+                  style={getCellStyle(width, fullColumns)}
                 >
                   {fieldLabel(f, entity.fields[f])}
                 </th>
@@ -161,7 +161,7 @@ export default function EntityTable({ entity, records, relatedRecords, onEdit, o
                   <td
                     key={f}
                     className={`px-4 py-4 text-sm text-gray-700 text-${align} whitespace-nowrap`}
-                    style={getCellStyle(width, hasFullColumns)}
+                    style={getCellStyle(width, fullColumns)}
                   >
                     {resolveCell(f, record[f])}
                   </td>

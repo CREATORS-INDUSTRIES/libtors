@@ -185,7 +185,7 @@ export default function EntityFilters({ filters, onApply, onClear, showClear, lo
               <span className="text-xs font-light text-gray-900 uppercase tracking-wide">{f.label ?? "Date"}:</span>
               <input
                 type="date"
-                value={typeof values[f.field] === 'string' ? values[f.field] : ''}
+                value={typeof values[f.field] === 'string' ? values[f.field] as string : ''}
                 onChange={(e) => handleSingleDateChange(f.field, e.target.value)}
                 className="pl-3 py-2 text-sm bg-transparent focus:outline-none [&::-webkit-calendar-picker-indicator]:hidden"
               />
