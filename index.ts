@@ -1,4 +1,5 @@
 export * from './Accordion'
+export * from './Modal'
 export { default as DownloadIcon } from './icons/DownloadIcon'
 export * from './data/provider'
 export * from './DateRangePicker'
