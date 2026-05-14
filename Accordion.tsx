@@ -15,7 +15,7 @@ interface AccordionProps {
   className?: string
 }
 
-export default function Accordion({
+export function Accordion({
   items,
   defaultOpenKey,
   openKey,
@@ -32,16 +32,16 @@ export default function Accordion({
   }
 
   return (
-    <div className={`flex flex-col rounded-xl border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`flex flex-col gap-2 ${className}`}>
       {items.map((item, i) => {
         const isOpen = current === item.key
         const isLast = i === items.length - 1
         return (
-          <div key={item.key} className={!isLast ? 'border-b border-gray-200' : ''}>
-            <div className="flex items-center hover:bg-gray-50 transition-colors">
+          <div key={item.key} className="rounded-md overflow-hidden">
+            <div className="flex items-center hover:bg-black/[0.03] transition-colors">
               <button
                 onClick={() => toggle(item.key)}
-                className="flex-1 flex items-center justify-between px-4 py-3 text-sm text-gray-800 cursor-pointer text-left"
+                className="flex-1 flex items-center justify-between px-4 py-3.5 text-sm text-black cursor-pointer text-left"
               >
                 <span>{item.label}</span>
               </button>
@@ -56,7 +56,7 @@ export default function Accordion({
               style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
             >
               <div className="overflow-hidden">
-                <div className="px-4 pb-4 text-sm text-gray-600">
+                <div className="px-4 pb-4 text-sm text-black/60">
                   {item.content}
                 </div>
               </div>
