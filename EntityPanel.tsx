@@ -142,6 +142,15 @@ export default function EntityPanel({ entity, onRowClick, headerActions }: Props
   const safePage = Math.min(currentPage, totalPages)
   const pageRecords = filteredRecords.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
+  const selectedId = searchParams.get('selected')
+  useEffect(() => {
+    if (!selectedId || filteredRecords.length === 0) return
+    const idx = filteredRecords.findIndex(r => String(r.id) === selectedId)
+    if (idx < 0) return
+    const targetPage = Math.floor(idx / PAGE_SIZE) + 1
+    if (targetPage !== safePage) setCurrentPage(targetPage)
+  }, [selectedId, filteredRecords, safePage])
+
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
     setCurrentPage(1)
