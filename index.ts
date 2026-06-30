@@ -1,6 +1,8 @@
 export * from './Accordion'
 export * from './Chip'
 export { default as Chip } from './Chip'
+export * from './IconButton'
+export { default as IconButton } from './IconButton'
 export * from './Modal'
 export { default as DownloadIcon } from './icons/DownloadIcon'
 export * from './data/provider'
