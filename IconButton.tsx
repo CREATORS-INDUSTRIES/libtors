@@ -16,7 +16,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 
 const SIZE: Record<IconButtonSize, { box: string; pill: string; glyph: string; text: string }> = {
   sm: { box: 'h-7 w-7', pill: 'h-7 px-2 gap-1.5', glyph: '[&_svg]:h-3.5 [&_svg]:w-3.5', text: 'text-xs' },
-  md: { box: 'h-8 w-8', pill: 'h-8 px-2.5 gap-1.5', glyph: '[&_svg]:h-4 [&_svg]:w-4', text: 'text-sm' },
+  md: { box: 'h-8 w-8', pill: 'h-8 px-2.5 gap-1.5', glyph: '[&_svg]:h-4 [&_svg]:w-4', text: 'text-xs' },
   lg: { box: 'h-10 w-10', pill: 'h-10 px-3 gap-2', glyph: '[&_svg]:h-5 [&_svg]:w-5', text: 'text-sm' },
 }
 
