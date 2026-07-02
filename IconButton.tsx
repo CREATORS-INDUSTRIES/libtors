@@ -7,15 +7,17 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   icon: ReactNode
   /** Accessible label — also used as the tooltip when `title` is unset. */
   label: string
-  /** Square footprint. Defaults to `md` (h-8). */
+  /** Optional inline text next to the icon: turns the square into a pill. */
+  text?: string
+  /** Square footprint (or pill height when `text` is set). Defaults to `md` (h-8). */
   size?: IconButtonSize
   className?: string
 }
 
-const SIZE: Record<IconButtonSize, { box: string; glyph: string }> = {
-  sm: { box: 'h-7 w-7', glyph: '[&_svg]:h-3.5 [&_svg]:w-3.5' },
-  md: { box: 'h-8 w-8', glyph: '[&_svg]:h-4 [&_svg]:w-4' },
-  lg: { box: 'h-10 w-10', glyph: '[&_svg]:h-5 [&_svg]:w-5' },
+const SIZE: Record<IconButtonSize, { box: string; pill: string; glyph: string; text: string }> = {
+  sm: { box: 'h-7 w-7', pill: 'h-7 px-2 gap-1.5', glyph: '[&_svg]:h-3.5 [&_svg]:w-3.5', text: 'text-xs' },
+  md: { box: 'h-8 w-8', pill: 'h-8 px-2.5 gap-1.5', glyph: '[&_svg]:h-4 [&_svg]:w-4', text: 'text-sm' },
+  lg: { box: 'h-10 w-10', pill: 'h-10 px-3 gap-2', glyph: '[&_svg]:h-5 [&_svg]:w-5', text: 'text-sm' },
 }
 
 /**
@@ -23,10 +25,12 @@ const SIZE: Record<IconButtonSize, { box: string; glyph: string }> = {
  * The shared concept behind back / refresh / expand controls.
  *
  *   <IconButton label="Back" icon={<ArrowLeft/>} onClick={goBack} />
+ *   <IconButton label="Integration docs" text="Docs" icon={<External/>} onClick={openDocs} />
  */
 export default function IconButton({
   icon,
   label,
+  text,
   size = 'md',
   className = '',
   title,
@@ -38,9 +42,10 @@ export default function IconButton({
       type="button"
       title={title ?? label}
       aria-label={label}
-      className={`group inline-flex shrink-0 items-center justify-center rounded-lg border border-black/20 bg-white text-black/60 transition-colors hover:bg-black/[0.04] hover:text-black active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${s.box} ${s.glyph} ${className}`}
+      className={`group inline-flex shrink-0 items-center justify-center rounded-lg border border-black/20 bg-white text-black/60 transition-colors hover:bg-black/[0.04] hover:text-black active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${text ? s.pill : s.box} ${s.glyph} ${className}`}
       {...props}
     >
+      {text && <span className={`${s.text} font-mono`}>{text}</span>}
       {icon}
     </button>
   )
