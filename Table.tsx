@@ -123,7 +123,9 @@ export default function Table<T>({
             >
               {columns.map(col => (
                 <div key={col.key} className={`flex items-baseline min-w-0 ${alignClass(col.align)}`}>
-                  <div className={`text-sm font-mono text-gray-700 truncate ${col.align === 'right' ? 'tabular-nums' : ''}`}>
+                  {/* No ellipsis, ever: text wraps within its column; when the
+                      table floor (minWidth) is hit the container scrolls. */}
+                  <div className={`text-sm font-mono text-gray-700 break-words min-w-0 ${col.align === 'right' ? 'tabular-nums' : ''}`}>
                     {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '—')}
                   </div>
                 </div>
