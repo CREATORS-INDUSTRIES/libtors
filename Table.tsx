@@ -17,6 +17,8 @@ interface TableProps<T> {
   emptyMessage?: string
   onRowClick?: (row: T) => void
   className?: string
+  /** Extra classes for a row, decided per row (e.g. highlight a kind of row). */
+  rowClassName?: (row: T) => string
   minWidth?: number | string
   footer?: React.ReactNode
 }
@@ -30,6 +32,7 @@ export default function Table<T>({
   emptyMessage = 'Sin registros',
   onRowClick,
   className = '',
+  rowClassName,
   minWidth,
   footer,
 }: TableProps<T>) {
@@ -115,7 +118,7 @@ export default function Table<T>({
             <div
               key={rowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`grid items-baseline gap-3 px-4 py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+              className={`grid items-baseline gap-3 px-4 py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName ? rowClassName(row) : ''}`}
               style={{ gridTemplateColumns: gridCols }}
             >
               {columns.map(col => (
