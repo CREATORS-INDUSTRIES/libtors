@@ -9,6 +9,8 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   label: string
   /** Optional inline text next to the icon: turns the square into a pill. */
   text?: string
+  /** Which side the icon sits on relative to `text`. Defaults to `right`. */
+  iconPosition?: 'left' | 'right'
   /** Square footprint (or pill height when `text` is set). Defaults to `md` (h-8). */
   size?: IconButtonSize
   className?: string
@@ -31,12 +33,14 @@ export default function IconButton({
   icon,
   label,
   text,
+  iconPosition = 'right',
   size = 'md',
   className = '',
   title,
   ...props
 }: IconButtonProps) {
   const s = SIZE[size]
+  const textEl = text && <span className={`${s.text} font-mono`}>{text}</span>
   return (
     <button
       type="button"
@@ -45,8 +49,17 @@ export default function IconButton({
       className={`group inline-flex shrink-0 items-center justify-center rounded-lg border border-black/20 bg-white text-black/60 transition-colors hover:bg-black/[0.04] hover:text-black active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${text ? s.pill : s.box} ${s.glyph} ${className}`}
       {...props}
     >
-      {text && <span className={`${s.text} font-mono`}>{text}</span>}
-      {icon}
+      {iconPosition === 'left' ? (
+        <>
+          {icon}
+          {textEl}
+        </>
+      ) : (
+        <>
+          {textEl}
+          {icon}
+        </>
+      )}
     </button>
   )
 }

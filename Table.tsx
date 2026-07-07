@@ -20,6 +20,9 @@ interface TableProps<T> {
   /** Extra classes for a row, decided per row (e.g. highlight a kind of row). */
   rowClassName?: (row: T) => string
   minWidth?: number | string
+  /** Horizontal inset padding for header + rows (px number or CSS length).
+   *  Defaults to 16px; raise it to keep cells off the card edges. */
+  inset?: number | string
   footer?: React.ReactNode
 }
 
@@ -34,6 +37,7 @@ export default function Table<T>({
   className = '',
   rowClassName,
   minWidth,
+  inset,
   footer,
 }: TableProps<T>) {
   const [sort, setSort] = useState<SortState>(null)
@@ -79,13 +83,19 @@ export default function Table<T>({
     innerStyle.minWidth = typeof minWidth === 'number' ? `${minWidth}px` : minWidth
   }
 
+  // Inset padding: when set, it replaces the default horizontal cell padding
+  // on the header + every row (and the empty message).
+  const padX = inset === undefined ? undefined : typeof inset === 'number' ? `${inset}px` : inset
+  const padStyle: React.CSSProperties = padX ? { paddingLeft: padX, paddingRight: padX } : {}
+  const padClass = padX ? '' : 'px-4'
+
   return (
     <div className={`w-full h-full overflow-auto ${className}`}>
       <div style={innerStyle}>
         {/* Header — sticky vertical, scrolls horizontal with body */}
         <div
-          className="grid items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white sticky top-0 z-10"
-          style={{ gridTemplateColumns: gridCols }}
+          className={`grid items-center gap-3 ${padClass} py-2 border-b border-gray-200 bg-white sticky top-0 z-10`}
+          style={{ gridTemplateColumns: gridCols, ...padStyle }}
         >
           {columns.map(col => {
             const active = sort?.key === col.key
@@ -112,14 +122,14 @@ export default function Table<T>({
 
         {/* Rows */}
         {sortedRows.length === 0 ? (
-          <div className="px-4 py-6 text-xs text-gray-400 font-mono uppercase">{emptyMessage}</div>
+          <div className={`${padClass} py-6 text-xs text-gray-400 font-mono uppercase`} style={padStyle}>{emptyMessage}</div>
         ) : (
           sortedRows.map(row => (
             <div
               key={rowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`grid items-baseline gap-3 px-4 py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName ? rowClassName(row) : ''}`}
-              style={{ gridTemplateColumns: gridCols }}
+              className={`grid items-baseline gap-3 ${padClass} py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName ? rowClassName(row) : ''}`}
+              style={{ gridTemplateColumns: gridCols, ...padStyle }}
             >
               {columns.map(col => (
                 <div key={col.key} className={`flex items-baseline min-w-0 ${alignClass(col.align)}`}>
