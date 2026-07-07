@@ -7,6 +7,14 @@ interface Props {
   to: string
   onChange: (from: string, to: string) => void
   className?: string
+  /**
+   * `days` (default): day-precision drag.
+   * `months`: selection snaps to whole months — `from` becomes the 1st of the
+   * start month, `to` the last day of the end month.
+   */
+  mode?: 'days' | 'months'
+  /** Track height in px. Defaults to 64. */
+  height?: number
 }
 
 const MONTH_LABELS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
@@ -61,7 +69,8 @@ const parseISO = (s: string): { y: number; m: number; d: number } | null => {
  * one year — if both endpoints fall in selected year, drag works; year
  * navigation via < > arrows.
  */
-export default function DateRangePicker({ from, to, onChange, className = '' }: Props) {
+export default function DateRangePicker({ from, to, onChange, className = '', mode = 'days', height = 64 }: Props) {
+  const months = mode === 'months'
   const fromParsed = parseISO(from)
   const toParsed = parseISO(to)
 
@@ -75,13 +84,24 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
   const todayDoy = today.getFullYear() === year ? dateToDoy(year, today.getMonth(), today.getDate()) : null
 
   // selected range in current year (committed)
-  const selected = useMemo(() => {
+  const selectedRaw = useMemo(() => {
     if (!fromParsed || !toParsed) return null
     if (fromParsed.y !== year && toParsed.y !== year) return null
     const startDoy = fromParsed.y === year ? dateToDoy(year, fromParsed.m, fromParsed.d) : 1
     const endDoy = toParsed.y === year ? dateToDoy(year, toParsed.m, toParsed.d) : total
     return { startDoy, endDoy }
   }, [fromParsed, toParsed, year, total])
+
+  // In months mode, widen any raw day band to cover whole months.
+  function snapBand(startDoy: number, endDoy: number) {
+    if (!months) return { startDoy, endDoy }
+    const sM = doyToDate(year, startDoy).m
+    const eM = doyToDate(year, endDoy).m
+    return {
+      startDoy: monthStartDoy(year, sM),
+      endDoy: monthStartDoy(year, eM) + monthDays(year, eM) - 1,
+    }
+  }
 
   function xToDoy(clientX: number): number {
     const rect = trackRef.current?.getBoundingClientRect()
@@ -117,9 +137,15 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
       const end = xToDoy(e.clientX)
       const startDoy = Math.min(drag.anchorDoy, end)
       const endDoy = Math.max(drag.anchorDoy, end)
-      const start = doyToDate(year, startDoy)
-      const finish = doyToDate(year, endDoy)
-      onChange(fmt(start.y, start.m, start.d), fmt(finish.y, finish.m, finish.d))
+      if (months) {
+        const sM = doyToDate(year, startDoy).m
+        const eM = doyToDate(year, endDoy).m
+        onChange(fmt(year, sM, 1), fmt(year, eM, monthDays(year, eM)))
+      } else {
+        const start = doyToDate(year, startDoy)
+        const finish = doyToDate(year, endDoy)
+        onChange(fmt(start.y, start.m, start.d), fmt(finish.y, finish.m, finish.d))
+      }
       setDrag(null)
     }
     window.addEventListener('mousemove', onMove)
@@ -128,12 +154,13 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [drag, year, onChange])
+  }, [drag, year, onChange, months])
 
-  // preview range (during drag) or committed
-  const preview = drag
+  // preview range (during drag) or committed — snapped to months when enabled
+  const rawPreview = drag
     ? { startDoy: Math.min(drag.anchorDoy, drag.currentDoy), endDoy: Math.max(drag.anchorDoy, drag.currentDoy) }
-    : selected
+    : selectedRaw
+  const preview = rawPreview ? snapBand(rawPreview.startDoy, rawPreview.endDoy) : null
 
   const startPct = preview ? (preview.startDoy - 1) / total * 100 : 0
   const endPct = preview ? preview.endDoy / total * 100 : 0
@@ -179,7 +206,8 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
           onMouseDown={onMouseDown}
           onMouseMove={(e) => updateCursor(e.clientX)}
           onMouseLeave={() => setCursor(null)}
-          className="relative h-16 w-full bg-gray-50 border border-gray-200 rounded-lg cursor-crosshair overflow-hidden"
+          style={{ height }}
+          className="relative w-full bg-gray-50 border border-gray-200 rounded-lg cursor-crosshair overflow-hidden"
         >
           {/* Selection band */}
           {preview && widthPct > 0 && (
@@ -254,7 +282,7 @@ export default function DateRangePicker({ from, to, onChange, className = '' }: 
               }}
             >
               <div className="px-1.5 py-0.5 bg-gray-900 text-gray-100 text-[9px] font-mono uppercase tracking-widest rounded whitespace-nowrap tabular-nums">
-                {pad(date.d)} {MONTH_LABELS[date.m]}
+                {months ? MONTH_LABELS[date.m] : `${pad(date.d)} ${MONTH_LABELS[date.m]}`}
               </div>
             </div>
           )
