@@ -41,7 +41,7 @@ export default function Segmented<T extends string>({
   return (
     <div
       role="tablist"
-      className={`inline-flex items-center rounded-lg border border-black/15 bg-black/[0.03] ${s.pad} ${s.gap} ${className}`}
+      className={`inline-flex items-center rounded-lg border border-black/15 bg-black/[0.03]  ${s.pad} ${s.gap} ${className}`}
     >
       {options.map((opt) => {
         const active = opt.value === value
@@ -52,11 +52,10 @@ export default function Segmented<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(opt.value)}
-            className={`inline-flex items-center gap-1.5 rounded-md font-mono uppercase tracking-[0.15em] whitespace-nowrap transition-colors ${s.seg} ${
-              active
-                ? 'bg-[#0056ff] text-white'
+            className={`inline-flex items-center gap-1.5 rounded-md font-mono uppercase tracking-[0.15em] whitespace-nowrap transition-colors ${s.seg} ${active
+                ? 'bg-gray-200'
                 : 'text-black/55 hover:text-black hover:bg-black/[0.04]'
-            }`}
+              }`}
           >
             {opt.icon && <span className="shrink-0 inline-flex items-center">{opt.icon}</span>}
             {opt.label}
