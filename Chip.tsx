@@ -1,13 +1,13 @@
 import { type ReactNode } from 'react'
 
 export type ChipVariant = 'neutral' | 'accent' | 'success' | 'danger' | 'warning'
-export type ChipSize = 'sm' | 'md'
+export type ChipSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl'
 
 export interface ChipProps {
   children: ReactNode
   /** Color intent. Defaults to `neutral`. */
   variant?: ChipVariant
-  /** `sm` (h-6) or `md` (h-7). Defaults to `md`. */
+  /** `sm` (h-6), `md` (h-7), `lg` (h-8) or `xl` (h-9). Defaults to `md`. */
   size?: ChipSize
   /** Solid saturated fill with white text. Maximum at-a-glance separation. */
   solid?: boolean
@@ -74,6 +74,9 @@ const SOLID: Record<ChipVariant, string> = {
 const SIZE: Record<ChipSize, { chip: string; pad: string; padIcon: string; badge: string; glyph: string }> = {
   sm: { chip: 'h-6 text-[11px] gap-1.5', pad: 'px-2.5', padIcon: 'pl-1 pr-2.5', badge: 'h-4 w-4', glyph: 'h-2.5 w-2.5' },
   md: { chip: 'h-7 text-xs gap-1.5', pad: 'px-3', padIcon: 'pl-1 pr-3', badge: 'h-5 w-5', glyph: 'h-3 w-3' },
+  lg: { chip: 'h-8 text-sm gap-2', pad: 'px-3.5', padIcon: 'pl-1 pr-3.5', badge: 'h-6 w-6', glyph: 'h-3.5 w-3.5' },
+  xl: { chip: 'h-9 text-base gap-2', pad: 'px-4', padIcon: 'pl-1.5 pr-4', badge: 'h-7 w-7', glyph: 'h-4 w-4' },
+  xxl: { chip: 'h-10 text-xl gap-2', pad: 'px-4', padIcon: 'pl-1.5 pr-4', badge: 'h-9 w-9', glyph: 'h-4 w-4' },
 }
 
 /**

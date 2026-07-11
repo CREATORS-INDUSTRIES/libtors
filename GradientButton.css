@@ -1,0 +1,47 @@
+/* Animated conic-gradient border, self-contained so any app can use GradientButton
+   without depending on app-level CSS. Registering --gb-angle as an <angle> lets it
+   interpolate, so the conic gradient rotates smoothly (no visible solid segment). */
+@property --gb-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes gb-rotate {
+  to {
+    --gb-angle: 360deg;
+  }
+}
+
+.gb-border {
+  background: conic-gradient(from var(--gb-angle), #0056ff, #ffffff, #0056ff, #ffffff, #0056ff);
+  animation: gb-rotate 5s linear infinite;
+}
+
+/* solid-blue rim overlay, faded in on hover. Sits over the gradient but under the
+   white inner surface, so only the 1.5px border shows it. */
+.gb-solid {
+  position: absolute;
+  inset: 0;
+  background: #0056ff;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+/* hover: freeze the rotation and settle into a solid blue border */
+.gb-border:hover {
+  animation-play-state: paused;
+}
+
+.gb-border:hover .gb-solid {
+  opacity: 1;
+}
+
+.gb-border:disabled {
+  animation: none;
+}
+
+.gb-border:disabled .gb-solid {
+  opacity: 0;
+}
