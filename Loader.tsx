@@ -1,4 +1,13 @@
-export default function Loader({ size = 40, lines = 12 }: { size?: number; lines?: number }) {
+export default function Loader({
+  size = 40,
+  lines = 12,
+  color = '#898989',
+}: {
+  size?: number
+  lines?: number
+  // Line color. Pass '#fff' for a white throbber on a dark/colored surface.
+  color?: string
+}) {
   const duration = 1.2
   const lineWidth = size * 0.05
   const lineHeight = size * 0.22
@@ -18,7 +27,7 @@ export default function Loader({ size = 40, lines = 12 }: { size?: number; lines
             style={{
               width: lineWidth,
               height: lineHeight,
-              backgroundColor: '#898989',
+              backgroundColor: color,
               top: '50%',
               left: '50%',
               transformOrigin: 'center bottom',
