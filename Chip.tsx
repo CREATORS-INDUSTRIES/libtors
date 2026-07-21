@@ -55,7 +55,7 @@ const VARIANT: Record<
     badgeOn: 'bg-red-500 text-white',
   },
   warning: {
-    base: 'border-transparent bg-amber-500/24 text-amber-600 hover:bg-amber-500/32',
+    base: 'border-transparent bg-amber-500/20 text-amber-600 hover:bg-amber-500/32',
     selected: 'border-transparent bg-amber-500/32 text-amber-600',
     badge: 'border-current',
     badgeOn: 'bg-amber-500 text-white',
