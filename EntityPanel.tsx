@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router'
 import type { ReactNode } from 'react'
 import RecordModal from './RecordModal'
 import DeleteModal from './DeleteModal'

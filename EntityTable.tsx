@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router'
 import type { ReactNode } from 'react'
 import { renderField } from './fieldRenderers'
 import { fieldAlign, fieldLabel, fieldRelation, fieldType, fieldWidth, type ApiRecord, type EntityDef, type FieldDef } from './data/provider'
