@@ -1,0 +1,40 @@
+/* Prefixed: driver and forge define their own blurIn and word-rise, and keyframes are global.
+
+   Both of these run with `forwards`, so their last frame is what the element
+   keeps for the rest of the session. That is why they end on `none` and not
+   on the identity value.
+
+   `filter: blur(0px)` and `transform: rotateX(0deg)` look like nothing, but
+   they are not `none`: each one creates a stacking context and keeps the
+   element on its own compositor layer forever. On a page with a dozen animated
+   blocks and a `backdrop-filter` header, that is where the ordering goes wrong.
+   A composited layer and a backdrop-filtered one are exactly the pair both
+   Chromium and WebKit get wrong, and the element scrolls over the navbar
+   instead of under it. Ending on `none` retires the layer when the animation
+   does. */
+@keyframes libtors-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* a word lying flat toward the viewer stands up into place */
+@keyframes libtors-word-rise {
+  from {
+    opacity: 0;
+    transform: rotateX(90deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
