@@ -54,9 +54,38 @@ function density(c: number, r: number, t: number, seed: number) {
   return Math.pow(stretched, SPARSITY)
 }
 
+// The icon is drawn on its own finer grid inside a pocket the field fades out of, so it
+// reads as a figure against the drift instead of a denser patch of it.
+const ICON_INK = '#fff'
+const ICON_CELL = 5
+// Pocket radius past the icon's half size, as a share of it, and the width of its fade.
+const POCKET = 1.15
+const POCKET_FADE = 0.45
+// Icon cells swing between neighbouring glyphs on their own sine, as in AsciiPortrait.
+const SWING = 0.08
+const SPEED = 1.2
+
+const smoothstep = (a: number, b: number, x: number) => fade(Math.min(Math.max((x - a) / (b - a), 0), 1))
+const glyphAt = (v: number) => GLYPHS[Math.round(Math.min(Math.max(v, 0), 1) * (GLYPHS.length - 1))]
+
 // A field of torch glyphs drifting on its own, sized to its parent. Pauses off screen and
-// holds a single frame under reduced motion.
-export default function AsciiField({ seed = 0, className = '' }: { seed?: number; className?: string }) {
+// holds a single frame under reduced motion. icon, an image source, is drawn in white at
+// iconSize of the field's height, centred at iconY of it: its alpha picks the cells, its brightness their density.
+export default function AsciiField({
+  seed = 0,
+  cell = CELL,
+  icon,
+  iconSize = 0.6,
+  iconY = 0.5,
+  className = '',
+}: {
+  seed?: number
+  cell?: number
+  icon?: string
+  iconSize?: number
+  iconY?: number
+  className?: string
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -66,6 +95,9 @@ export default function AsciiField({ seed = 0, className = '' }: { seed?: number
     const ctx = canvas.getContext('2d')!
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let size = { w: 0, h: 0, cols: 0, rows: 0 }
+    let pocket = new Float32Array()
+    let glyph = { x0: 0, y0: 0, cols: 0, rows: 0, ink: new Float32Array(), phase: new Float32Array() }
+    let image: HTMLImageElement | null = null
     let frame = 0
     let last = 0
     let visible = false
@@ -73,10 +105,67 @@ export default function AsciiField({ seed = 0, className = '' }: { seed?: number
     const paint = (t: number) => {
       const { w, h, cols, rows } = size
       ctx.clearRect(0, 0, w, h)
+      ctx.font = `${cell}px "DM Mono", monospace`
+      ctx.fillStyle = INK
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const glyph = GLYPHS[Math.round(density(c, r, t, seed) * (GLYPHS.length - 1))]
-          if (glyph !== ' ') ctx.fillText(glyph, c * CELL * ADVANCE, r * CELL)
+          const g = glyphAt(density(c, r, t, seed) * (pocket[r * cols + c] ?? 1))
+          if (g !== ' ') ctx.fillText(g, c * cell * ADVANCE, r * cell)
+        }
+      }
+      const { x0, y0, ink, phase } = glyph
+      if (!ink.length) return
+      ctx.font = `${ICON_CELL}px "DM Mono", monospace`
+      ctx.fillStyle = ICON_INK
+      for (let r = 0; r < glyph.rows; r++) {
+        for (let c = 0; c < glyph.cols; c++) {
+          const i = r * glyph.cols + c
+          if (!ink[i]) continue
+          const g = glyphAt(ink[i] + SWING * Math.sin(t * SPEED + phase[i]))
+          if (g !== ' ') ctx.fillText(g, x0 + c * ICON_CELL * ADVANCE, y0 + r * ICON_CELL)
+        }
+      }
+    }
+
+    const sampleIcon = () => {
+      const { w, h, cols, rows } = size
+      pocket = new Float32Array()
+      glyph = { ...glyph, ink: new Float32Array(), phase: new Float32Array() }
+      if (!image?.naturalWidth || !w || !h) return
+      const ih = h * iconSize
+      const iw = (ih * image.naturalWidth) / image.naturalHeight
+      const gcols = Math.floor(iw / (ICON_CELL * ADVANCE))
+      const grows = Math.floor(ih / ICON_CELL)
+      const sample = document.createElement('canvas')
+      sample.width = gcols
+      sample.height = grows
+      const sctx = sample.getContext('2d', { willReadFrequently: true })!
+      sctx.drawImage(image, 0, 0, gcols, grows)
+      const { data } = sctx.getImageData(0, 0, gcols, grows)
+      const ink = new Float32Array(gcols * grows)
+      for (let i = 0; i < ink.length; i++) {
+        const alpha = data[i * 4 + 3] / 255
+        if (alpha < 0.2) continue
+        // Floored so the faintest shade still draws a glyph and the silhouette never breaks.
+        const lum = (0.2126 * data[i * 4] + 0.7152 * data[i * 4 + 1] + 0.0722 * data[i * 4 + 2]) / 255
+        ink[i] = Math.max(alpha * lum, 0.25)
+      }
+      glyph = {
+        x0: (w - gcols * ICON_CELL * ADVANCE) / 2,
+        y0: h * iconY - (grows * ICON_CELL) / 2,
+        cols: gcols,
+        rows: grows,
+        ink,
+        phase: Float32Array.from(ink, () => Math.random() * 2 * Math.PI),
+      }
+      pocket = new Float32Array(cols * rows)
+      const rx = (iw / 2) * POCKET
+      const ry = (ih / 2) * POCKET
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const dx = ((c + 0.5) * cell * ADVANCE - w / 2) / rx
+          const dy = ((r + 0.5) * cell - h * iconY) / ry
+          pocket[r * cols + c] = smoothstep(1, 1 + POCKET_FADE, Math.hypot(dx, dy))
         }
       }
     }
@@ -90,11 +179,16 @@ export default function AsciiField({ seed = 0, className = '' }: { seed?: number
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.font = `${CELL}px "DM Mono", monospace`
       ctx.textBaseline = 'top'
-      ctx.fillStyle = INK
-      size = { w, h, cols: Math.ceil(w / (CELL * ADVANCE)), rows: Math.ceil(h / CELL) }
+      size = { w, h, cols: Math.ceil(w / (cell * ADVANCE)), rows: Math.ceil(h / cell) }
+      sampleIcon()
       paint(performance.now() / 1000)
+    }
+
+    if (icon) {
+      image = new Image()
+      image.onload = resize
+      image.src = icon
     }
 
     const loop = (now: number) => {
@@ -117,8 +211,9 @@ export default function AsciiField({ seed = 0, className = '' }: { seed?: number
       cancelAnimationFrame(frame)
       sizer.disconnect()
       watcher.disconnect()
+      if (image) image.onload = null
     }
-  }, [seed])
+  }, [seed, cell, icon, iconSize, iconY])
 
   return <canvas ref={canvasRef} aria-hidden className={`pointer-events-none absolute inset-0 ${className}`} />
 }

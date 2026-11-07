@@ -38,3 +38,45 @@
     transform: none;
   }
 }
+
+/* an icon grows into place from nothing; overshoots slightly with a springy easing */
+@keyframes libtors-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Marquee tracks hold their children twice, so half the track is one full loop. */
+@keyframes libtors-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.libtors-marquee {
+  animation: libtors-marquee var(--libtors-marquee-duration, 30s) linear infinite;
+}
+
+.libtors-marquee-host {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .libtors-marquee {
+    animation: none;
+  }
+
+  .libtors-marquee-host {
+    overflow-x: auto;
+  }
+}
