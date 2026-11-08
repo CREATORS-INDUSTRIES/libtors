@@ -158,6 +158,7 @@ function NavTab({ label, href, items, itemsTitle = label, current }: NavSection 
   }`
 
   return (
+    // No gap or padding around tabs: any dead strip between them drops the panel and the pointer cursor.
     <div
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={close}
@@ -203,7 +204,7 @@ function NavTab({ label, href, items, itemsTitle = label, current }: NavSection 
 export default function NavMenu({ sections }: { sections: NavSection[] }) {
   const current = useSection(sections)
   return (
-    <div className="hidden items-center gap-1 md:flex">
+    <div className="hidden items-center md:flex">
       {sections.map((section) => (
         <NavTab key={section.label} {...section} current={current === section.label} />
       ))}
