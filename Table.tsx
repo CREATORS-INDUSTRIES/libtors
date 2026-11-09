@@ -110,7 +110,7 @@ export default function Table<T>({
                 <span className="truncate">{col.label}</span>
                 {canSort && (
                   <span
-                    className={`text-sm font-extralight transition-all group-hover:text-black/60 text-black group-hover:opacity-100 ${active ? "opacity-100" : "opacity-0"} `}
+                    className={`text-sm font-extralight transition-colors ${active ? "text-black" : "text-transparent group-hover:text-black/60"}`}
                   >
                     {active && sort?.dir === 'desc' ? '↓' : '↑'}
                   </span>

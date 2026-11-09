@@ -36,7 +36,7 @@ export default function SelfCover() {
   )
 
   return (
-    <div className="relative h-full w-full transition-transform duration-500 group-hover:scale-[1.02]">
+    <div className="relative h-full w-full">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="block h-full w-full" aria-hidden>
         <defs>
           <pattern id={grid} width="5" height="5" patternUnits="userSpaceOnUse">

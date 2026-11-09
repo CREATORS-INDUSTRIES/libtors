@@ -35,7 +35,7 @@ function matchTokens(
 function highlightJs(code: string): ReactNode[] {
   return matchTokens(
     code,
-    /(\/\/[^\n]*)|('(?:[^'\\\n]|\\.)*')|\b(const|await|require)\b/g,
+    /(\/\/[^\n]*)|('(?:[^'\\\n]|\\.)*')|\b(const|let|await|require|import|from|for|of|if|try|catch|throw|new|return|void)\b/g,
     (m) => (m[1] ? DIM : m[2] ? STR : ACCENT),
     'js',
   )

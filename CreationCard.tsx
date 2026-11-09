@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { VEIL } from './hover'
 
 export interface CreationEntry {
   slug: string
@@ -35,8 +36,9 @@ export default function CreationCard({ entry }: { entry: CreationEntry }) {
           preload="metadata"
           width={1280}
           height={720}
-          className="block h-full w-full object-cover opacity-80 transition duration-500 group-hover:opacity-100"
+          className="block h-full w-full object-cover"
         />
+        <span aria-hidden className={`${VEIL} bg-black/20 duration-500`} />
       </div>
       <div className="flex flex-col gap-3 border-t border-white/10 px-6 py-6 sm:px-8">
         <div className="flex items-center gap-3">
