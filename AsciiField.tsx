@@ -71,19 +71,24 @@ const glyphAt = (v: number) => GLYPHS[Math.round(Math.min(Math.max(v, 0), 1) * (
 // A field of torch glyphs drifting on its own, sized to its parent. Pauses off screen and
 // holds a single frame under reduced motion. icon, an image source, is drawn in white at
 // iconSize of the field's height, centred at iconY of it: its alpha picks the cells, its brightness their density.
+// field={false} draws the icon alone, for spots too small for the drift to read as anything but noise.
 export default function AsciiField({
   seed = 0,
   cell = CELL,
+  field = true,
   icon,
   iconSize = 0.6,
   iconY = 0.5,
+  iconCell = ICON_CELL,
   className = '',
 }: {
   seed?: number
   cell?: number
+  field?: boolean
   icon?: string
   iconSize?: number
   iconY?: number
+  iconCell?: number
   className?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -105,24 +110,26 @@ export default function AsciiField({
     const paint = (t: number) => {
       const { w, h, cols, rows } = size
       ctx.clearRect(0, 0, w, h)
-      ctx.font = `${cell}px "DM Mono", monospace`
-      ctx.fillStyle = INK
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const g = glyphAt(density(c, r, t, seed) * (pocket[r * cols + c] ?? 1))
-          if (g !== ' ') ctx.fillText(g, c * cell * ADVANCE, r * cell)
+      if (field) {
+        ctx.font = `${cell}px "DM Mono", monospace`
+        ctx.fillStyle = INK
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const g = glyphAt(density(c, r, t, seed) * (pocket[r * cols + c] ?? 1))
+            if (g !== ' ') ctx.fillText(g, c * cell * ADVANCE, r * cell)
+          }
         }
       }
       const { x0, y0, ink, phase } = glyph
       if (!ink.length) return
-      ctx.font = `${ICON_CELL}px "DM Mono", monospace`
+      ctx.font = `${iconCell}px "DM Mono", monospace`
       ctx.fillStyle = ICON_INK
       for (let r = 0; r < glyph.rows; r++) {
         for (let c = 0; c < glyph.cols; c++) {
           const i = r * glyph.cols + c
           if (!ink[i]) continue
           const g = glyphAt(ink[i] + SWING * Math.sin(t * SPEED + phase[i]))
-          if (g !== ' ') ctx.fillText(g, x0 + c * ICON_CELL * ADVANCE, y0 + r * ICON_CELL)
+          if (g !== ' ') ctx.fillText(g, x0 + c * iconCell * ADVANCE, y0 + r * iconCell)
         }
       }
     }
@@ -134,8 +141,8 @@ export default function AsciiField({
       if (!image?.naturalWidth || !w || !h) return
       const ih = h * iconSize
       const iw = (ih * image.naturalWidth) / image.naturalHeight
-      const gcols = Math.floor(iw / (ICON_CELL * ADVANCE))
-      const grows = Math.floor(ih / ICON_CELL)
+      const gcols = Math.floor(iw / (iconCell * ADVANCE))
+      const grows = Math.floor(ih / iconCell)
       const sample = document.createElement('canvas')
       sample.width = gcols
       sample.height = grows
@@ -151,8 +158,8 @@ export default function AsciiField({
         ink[i] = Math.max(alpha * lum, 0.25)
       }
       glyph = {
-        x0: (w - gcols * ICON_CELL * ADVANCE) / 2,
-        y0: h * iconY - (grows * ICON_CELL) / 2,
+        x0: (w - gcols * iconCell * ADVANCE) / 2,
+        y0: h * iconY - (grows * iconCell) / 2,
         cols: gcols,
         rows: grows,
         ink,
@@ -213,7 +220,7 @@ export default function AsciiField({
       watcher.disconnect()
       if (image) image.onload = null
     }
-  }, [seed, cell, icon, iconSize, iconY])
+  }, [seed, cell, field, icon, iconSize, iconY, iconCell])
 
   return <canvas ref={canvasRef} aria-hidden className={`pointer-events-none absolute inset-0 ${className}`} />
 }
