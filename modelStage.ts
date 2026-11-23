@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
+import { HEAD_D } from './icons/CreatorsHeadPath'
+import { WORDMARK_D } from './icons/CreatorsWordmarkPath'
 
 const FILL = 0x222222
 const LINE = 0x8a8a8a
@@ -52,7 +55,10 @@ export function loadModel(src: string) {
     model = new GLTFLoader()
       .setMeshoptDecoder(MeshoptDecoder)
       .loadAsync(src)
-      .then((gltf) => gltf.scene)
+      .then((gltf) => {
+        engrave(gltf.scene)
+        return gltf.scene
+      })
     models.set(src, model)
   }
   return model.then((scene) => scene.clone())
@@ -180,6 +186,62 @@ export function layRow(obj: THREE.Object3D, pieces: string[][], gap = GAP) {
     x += piece.across + gap
   }
   return { row, width: Math.max(0, width), height }
+}
+
+// Marks painted on the lid, as on the built Tac, in model units: where each centres,
+// its size along one side (the other follows the path's aspect), and the directions the
+// path's x and y run along the face, which cross into the lid. Each centre sits a hair
+// off its face so it wins the depth test.
+const ENGRAVINGS = [
+  { name: 'lid-head', d: HEAD_D, at: [-1.97, 2.73, 0.08], height: 1.8, x: [1, 0, 0], y: [0, 0, 1] },
+  // Between the bottom screws (x -3.23, 8.21) with its baseline on their line (y -1.55).
+  { name: 'lid-wordmark', d: WORDMARK_D, at: [2.49, -0.85, -3.83], width: 10.2, x: [-1, 0, 0], y: [0, -1, 0] },
+]
+// Points per curve when a path is flattened.
+const CURVE = 12
+
+// Engravings on the lid node as an opaque face lined by baked edges, so stage.paint
+// draws them as solid paint on the see-through lid.
+function engrave(obj: THREE.Object3D) {
+  const lid = obj.getObjectByName('lid')
+  if (!lid) return
+  const svg = new SVGLoader()
+  for (const { name, d, at, width, height, x, y } of ENGRAVINGS) {
+    const { paths } = svg.parse(`<svg xmlns="http://www.w3.org/2000/svg"><path d="${d}"/></svg>`)
+    const shapes = paths.flatMap((path) => SVGLoader.createShapes(path))
+    const loops = shapes.flatMap((shape) => {
+      const { shape: outer, holes } = shape.extractPoints(CURVE)
+      return [outer, ...holes]
+    })
+    const bounds = new THREE.Box2().setFromPoints(loops.flat())
+    const size = bounds.getSize(new THREE.Vector2())
+    const mid = bounds.getCenter(new THREE.Vector2())
+    const scale = width ? width / size.x : height! / size.y
+    // Path space to model space: centred on the path's bounds, laid along the face.
+    const across = new THREE.Vector3(...x)
+    const down = new THREE.Vector3(...y)
+    const into = across.clone().cross(down)
+    const toFace = new THREE.Matrix4()
+      .makeBasis(across.multiplyScalar(scale), down.multiplyScalar(scale), into)
+      .setPosition(new THREE.Vector3(...at))
+      .multiply(new THREE.Matrix4().makeTranslation(-mid.x, -mid.y, 0))
+    const segments = loops.flatMap((loop) => loop.flatMap((p, i) => [p.x, p.y, 0, loop[(i + 1) % loop.length].x, loop[(i + 1) % loop.length].y, 0]))
+    const edges = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(segments, 3)))
+    const fill = new THREE.ShapeGeometry(shapes, CURVE)
+    // Shape faces front +z, which toFace turns into the lid; flipped to face out.
+    const index = fill.getIndex()!
+    for (let i = 0; i < index.count; i += 3) {
+      const b = index.getX(i + 1)
+      index.setX(i + 1, index.getX(i + 2))
+      index.setX(i + 2, b)
+    }
+    const face = new THREE.Mesh(fill)
+    const mark = new THREE.Group()
+    mark.name = name
+    mark.add(face, edges)
+    mark.applyMatrix4(toFace)
+    lid.add(mark)
+  }
 }
 
 export type Stage = ReturnType<typeof createStage>
