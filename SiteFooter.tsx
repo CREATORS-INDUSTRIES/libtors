@@ -23,7 +23,7 @@ export default function SiteFooter({
   location,
 }: {
   sections: FooterSection[]
-  logo: { src: string; alt: string }
+  logo: { src: string; alt: string; width?: number; height?: number }
   copyright: string
   location: string
 }) {
@@ -38,6 +38,8 @@ export default function SiteFooter({
               <img
                 src={logo.src}
                 alt={logo.alt}
+                width={logo.width}
+                height={logo.height}
                 className="absolute left-6 top-5 h-[calc(100%-2.5rem)] w-auto md:top-6 md:h-[calc(100%-3rem)]"
               />
             </div>
